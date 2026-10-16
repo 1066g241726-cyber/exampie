@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>ミニゲーム集 - ゲームハブ</title>
+
+  <!-- Onsen UI CSS & JS (Monaca標準ライブラリ CDN) -->
+  <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsenui.css">
+  <link rel="stylesheet" href="https://unpkg.com/onsenui/css/onsen-css-components.min.css">
+  <script src="https://unpkg.com/onsenui/js/onsenui.min.js"></script>
+
+  <style>
+    /* 全体・共通CSS */
+    ons-card {
+      text-align: center;
+      margin: 15px;
+      padding: 15px;
+    }
+
+    .game-btn-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 15px;
+    }
+
+    .game-menu-btn {
+      padding: 15px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .result-message {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin: 15px 0;
+      min-height: 24px;
+    }
+
+    /* ① 数当てゲーム用CSS */
+    .input-num {
+      width: 80%;
+      max-width: 200px;
+      font-size: 20px;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    /* ② 連打ゲーム用CSS */
+    .tap-btn {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      font-size: 20px;
+      font-weight: bold;
+      background-color: #ff5252;
+      color: white;
+      border: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .tap-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* ③ じゃんけんゲーム用CSS */
+    .janken-btns {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    /* ④ 神経衰弱用CSS */
+    .memory-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      max-width: 320px;
+      margin: 15px auto;
+    }
+    .memory-card {
+      height: 70px;
+      background-color: #29b6f6;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .memory-card.flipped {
+      background-color: #ffffff;
+      color: #333;
+      border: 2px solid #29b6f6;
+    }
+    .memory-card.matched {
+      background-color: #81c784;
+      color: white;
+      visibility: visible;
+    }
+
+    /* ⑤ アイパス検定クイズ用CSS */
+    .quiz-option {
+      width: 100%;
+      margin-bottom: 10px;
+      text-align: left;
+      white-space: normal;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 画面ナビゲーター（画面遷移を管理） -->
+  <ons-navigator id="myNavigator" page="top.html"></ons-navigator>
+
+  <!-- ========================================== -->
+  <!-- トップ画面（メニュー画面）                 -->
+  <!-- ========================================== -->
+  <template id="top.html">
+    <ons-page id="topPage">
+      <ons-toolbar>
+        <div class="center">ミニゲーム</div>
+      </ons-toolbar>
+
+      <div style="text-align: center; padding-top: 15px;">
+        <p>遊ぶゲームを選んでね！</p>
+      </div>
+
+      <div class="game-btn-container">
+        <ons-button modifier="large" class="game-menu-btn" onclick="pushPage('game1.html')">1. 数当てゲーム</ons-button>
+        <ons-button modifier="large" class="game-menu-btn" style="background-color: #ff5252;" onclick="pushPage('game2.html')">2. 10秒連打ゲーム</ons-button>
+        <ons-button modifier="large" class="game-menu-btn" style="background-color: #ffb74d;" onclick="pushPage('game3.html')">3. じゃんけんゲーム</ons-button>
+        <ons-button modifier="large" class="game-menu-btn" style="background-color: #29b6f6;" onclick="pushPage('game4.html')">4. 神経衰弱</ons-button>
+        <ons-button modifier="large" class="game-menu-btn" style="background-color: #ab47bc;" onclick="pushPage('game5.html')">5. ITパスポート検定クイズ</ons-button>
+      </div>
+    </ons-page>
+  </template>
+
+
+  <!-- ========================================== -->
+  <!-- ① 数当てゲーム                             -->
+  <!-- ========================================== -->
+  <template id="game1.html">
+    <ons-page id="game1Page">
+      <ons-toolbar>
+        <div class="left"><ons-back-button>戻る</ons-back-button></div>
+        <div class="center">数当てゲーム</div>
+      </ons-toolbar>
+
+      <ons-card>
+        <h2>1〜100の数字を当てよう！</h2>
+        <p>コンピューターが選んだ数字を予想してね。</p>
+        
+        <input type="number" id="numInput" class="input-num" placeholder="1〜100" min="1" max="100">
+        <br>
+        <ons-button onclick="checkNumber()">判定する</ons-button>
+        
+        <div id="game1Result" class="result-message">答えを入力してね！</div>
+        <p>試行回数: <span id="game1Count">0</span>回</p>
+
+        <ons-button modifier="quiet" onclick="initGame1()">最初からやり直す</ons-button>
+      </ons-card>
+    </ons-page>
+  </template>
+
+
+  <!-- ========================================== -->
+  <!-- ② 連打ゲーム                               -->
+  <!-- ========================================== -->
+  <template id="game2.html">
+    <ons-page id="game2Page">
+      <ons-toolbar>
+        <div class="left"><ons-back-button>戻る</ons-back-button></div>
+        <div class="center">10秒連打ゲーム</div>
+      </ons-toolbar>
+
+      <ons-card>
+        <h2>10秒間で何回押せる？</h2>
+        <p>残り時間: <span id="game2Timer" style="font-size: 24px; font-weight: bold; color: #ff5252;">10.0</span> 秒</p>
+        <p>タップ数: <span id="game2Score" style="font-size: 24px; font-weight: bold;">0</span> 回</p>
+
+        <div style="margin: 20px 0;">
+          <button id="tapBtn" class="tap-btn" onclick="tapCount()">TAP!</button>
+        </div>
+
+        <div id="game2Result" class="result-message">スタートボタンかボタンタップで開始！</div>
+        <ons-button onclick="initGame2()">リセット</ons-button>
+      </ons-card>
+    </ons-page>
+  </template>
+
+
+  <!-- ========================================== -->
+  <!-- ③ じゃんけんゲーム                           -->
+  <!-- ========================================== -->
+  <template id="game3.html">
+    <ons-page id="game3Page">
+      <ons-toolbar>
+        <div class="left"><ons-back-button>戻る</ons-back-button></div>
+        <div class="center">じゃんけんゲーム</div>
+      </ons-toolbar>
+
+      <ons-card>
+        <h2>じゃんけん... PON!</h2>
+        <p>相手の手: <span id="cpuHand" style="font-size: 24px;">❓</span></p>
+
+        <div class="janken-btns">
+          <ons-button onclick="playJanken(0)">✊ グー</ons-button>
+          <ons-button onclick="playJanken(1)">✌️ チョキ</ons-button>
+          <ons-button onclick="playJanken(2)">✋ パー</ons-button>
+        </div>
+
+        <div id="game3Result" class="result-message">自分の手を選んでね！</div>
+        <p>戦績: <span id="jankenWin">0</span>勝 <span id="jankenLose">0</span>敗 <span id="jankenDraw">0</span>分</p>
+      </ons-card>
+    </ons-page>
+  </template>
+
+
+  <!-- ========================================== -->
+  <!-- ④ 神経衰弱                                 -->
+  <!-- ========================================== -->
+  <template id="game4.html">
+    <ons-page id="game4Page">
+      <ons-toolbar>
+        <div class="left"><ons-back-button>戻る</ons-back-button></div>
+        <div class="center">神経衰弱</div>
+      </ons-toolbar>
+
+      <ons-card>
+        <h2>同じ絵柄を揃えよう！</h2>
+        <div id="memoryBoard" class="memory-grid"></div>
+        <div id="game4Result" class="result-message">カードを選んでね</div>
+        <ons-button onclick="initGame4()">もう一度遊ぶ</ons-button>
+      </ons-card>
+    </ons-page>
+  </template>
+
+
+  <!-- ========================================== -->
+  <!-- ⑤ アイパス検定クイズ                       -->
+  <!-- ========================================== -->
+  <template id="game5.html">
+    <ons-page id="game5Page">
+      <ons-toolbar>
+        <div class="left"><ons-back-button>戻る</ons-back-button></div>
+        <div class="center">アイパス検定クイズ</div>
+      </ons-toolbar>
+
+      <ons-card>
+        <p>第 <span id="quizNum">1</span> 門 / 全5問</p>
+        <h3 id="quizQuestion" style="min-height: 50px; text-align: left;">問題文がここに表示されます</h3>
+        
+        <div id="quizOptions" style="margin-top: 15px;"></div>
+
+        <div id="game5Result" class="result-message"></div>
+        <ons-button id="nextQuizBtn" style="display: none;" onclick="nextQuiz()">次の問題へ</ons-button>
+        <ons-button id="restartQuizBtn" style="display: none;" onclick="initGame5()">最初から解く</ons-button>
+      </ons-card>
+    </ons-page>
+  </template>
+
+
+  <!-- ========================================== -->
+  <!-- JavaScriptプログラム（ロジック処理）        -->
+  <!-- ========================================== -->
+  <script>
+    // 画面遷移用の関数
+    function pushPage(page) {
+      document.getElementById('myNavigator').pushPage(page);
+    }
+
+    // ページが切り替わったときの初期化イベントハンドラ
+    document.addEventListener('init', function(event) {
+      const page = event.target;
+
+      if (page.id === 'game1Page') { initGame1(); }
+      else if (page.id === 'game2Page') { initGame2(); }
+      else if (page.id === 'game3Page') { initGame3(); }
+      else if (page.id === 'game4Page') { initGame4(); }
+      else if (page.id === 'game5Page') { initGame5(); }
+    });
+
+    /* ==========================================
+       ① 数当てゲームのロジック
+       ========================================== */
+    let targetNum = 0;
+    let countNum = 0;
+
+    function initGame1() {
+      targetNum = Math.floor(Math.random() * 100) + 1; // 1~100のランダムな整数
+      countNum = 0;
+      document.getElementById('numInput').value = '';
+      document.getElementById('game1Result').textContent = '1〜100の数字を入力してね！';
+      document.getElementById('game1Count').textContent = countNum;
+    }
+
+    function checkNumber() {
+      const inputVal = parseInt(document.getElementById('numInput').value);
+      const resultEl = document.getElementById('game1Result');
+
+      if (isNaN(inputVal) || inputVal < 1 || inputVal > 100) {
+        resultEl.textContent = '1〜100の正しい数字を入力してください。';
+        return;
+      }
+
+      countNum++;
+      document.getElementById('game1Count').textContent = countNum;
+
+      if (inputVal === targetNum) {
+        resultEl.textContent = `🎉 正解！ ${countNum}回目で当たったよ！`;
+      } else if (inputVal < targetNum) {
+        resultEl.textContent = '📈 もっと「大きい」数字だよ！';
+      } else {
+        resultEl.textContent = '📉 もっと「小さい」数字だよ！';
+      }
+    }
+
+
+    /* ==========================================
+       ② 連打ゲームのロジック
+       ========================================== */
+    let tapScore = 0;
+    let timeLeft = 10.0;
+    let timerId = null;
+    let isPlayingGame2 = false;
+
+    function initGame2() {
+      clearInterval(timerId);
+      tapScore = 0;
+      timeLeft = 10.0;
+      isPlayingGame2 = false;
+      document.getElementById('game2Score').textContent = tapScore;
+      document.getElementById('game2Timer').textContent = timeLeft.toFixed(1);
+      document.getElementById('game2Result').textContent = 'ボタンを連打してスタート！';
+    }
+
+    function tapCount() {
+      if (!isPlayingGame2 && timeLeft === 10.0) {
+        // タイマースタート
+        isPlayingGame2 = true;
+        document.getElementById('game2Result').textContent = '連打！連打！！';
+        timerId = setInterval(function() {
+          timeLeft -= 0.1;
+          if (timeLeft <= 0) {
+            timeLeft = 0;
+            clearInterval(timerId);
+            isPlayingGame2 = false;
+            document.getElementById('game2Result').textContent = `終了！記録は ${tapScore} 回でした！`;
+          }
+          document.getElementById('game2Timer').textContent = timeLeft.toFixed(1);
+        }, 100);
+      }
+
+      if (isPlayingGame2) {
+        tapScore++;
+        document.getElementById('game2Score').textContent = tapScore;
+      }
+    }
+
+
+    /* ==========================================
+       ③ じゃんけんゲームのロジック
+       ========================================== */
+    let jankenStats = { win: 0, lose: 0, draw: 0 };
+    const hands = ['✊ グー', '✌️ チョキ', '✋ パー'];
+
+    function initGame3() {
+      document.getElementById('cpuHand').textContent = '❓';
+      document.getElementById('game3Result').textContent = '自分の手を選んでね！';
+    }
+
+    function playJanken(playerHand) {
+      const cpuHand = Math.floor(Math.random() * 3);
+      document.getElementById('cpuHand').textContent = hands[cpuHand];
+
+      const resultEl = document.getElementById('game3Result');
+
+      if (playerHand === cpuHand) {
+        resultEl.textContent = 'あいこで...';
+        jankenStats.draw++;
+      } else if ((playerHand === 0 && cpuHand === 1) || 
+                 (playerHand === 1 && cpuHand === 2) || 
+                 (playerHand === 2 && cpuHand === 0)) {
+        resultEl.textContent = '🎉 勝ち！';
+        jankenStats.win++;
+      } else {
+        resultEl.textContent = '💀 負け...';
+        jankenStats.lose++;
+      }
+
+      document.getElementById('jankenWin').textContent = jankenStats.win;
+      document.getElementById('jankenLose').textContent = jankenStats.lose;
+      document.getElementById('jankenDraw').textContent = jankenStats.draw;
+    }
+
+
+    /* ==========================================
+       ④ 神経衰弱のロジック
+       ========================================== */
+    const cardIcons = ['🐶', '🐱', '🐰', '🦊', '🐼', '🐵', '🐯', '🦁'];
+    let cards = [];
+    let flippedCards = [];
+    let matchedPairs = 0;
+    let lockBoard = false;
+
+    function initGame4() {
+      const board = document.getElementById('memoryBoard');
+      board.innerHTML = '';
+      flippedCards = [];
+      matchedPairs = 0;
+      lockBoard = false;
+      document.getElementById('game4Result').textContent = 'カードを選んでね';
+
+      // 8種類のペア（全16枚）を用意してシャッフル
+      cards = [...cardIcons, ...cardIcons].sort(() => Math.random() - 0.5);
+
+      cards.forEach((icon, index) => {
+        const cardEl = document.createElement('div');
+        cardEl.classList.add('memory-card');
+        cardEl.dataset.icon = icon;
+        cardEl.dataset.index = index;
+        cardEl.textContent = '❓';
+        cardEl.onclick = () => flipCard(cardEl);
+        board.appendChild(cardEl);
+      });
+    }
+
+    function flipCard(cardEl) {
+      if (lockBoard || cardEl.classList.contains('flipped') || cardEl.classList.contains('matched')) return;
+
+      cardEl.classList.add('flipped');
+      cardEl.textContent = cardEl.dataset.icon;
+      flippedCards.push(cardEl);
+
+      if (flippedCards.length === 2) {
+        checkMemoryMatch();
+      }
+    }
+
+    function checkMemoryMatch() {
+      lockBoard = true;
+      const [card1, card2] = flippedCards;
+
+      if (card1.dataset.icon === card2.dataset.icon) {
+        card1.classList.add('matched');
+        card2.classList.add('matched');
+        matchedPairs++;
+        flippedCards = [];
+        lockBoard = false;
+
+        if (matchedPairs === cardIcons.length) {
+          document.getElementById('game4Result').textContent = '🎉 全部揃ったよ！クリア！';
+        }
+      } else {
+        setTimeout(() => {
+          card1.classList.remove('flipped');
+          card2.classList.remove('flipped');
+          card1.textContent = '❓';
+          card2.textContent = '❓';
+          flippedCards = [];
+          lockBoard = false;
+        }, 1000);
+      }
+    }
+
+
+    /* ==========================================
+       ⑤ アイパス（ITパスポート）検定クイズのロジック
+       ========================================== */
+    const quizData = [
+      {
+        q: "インターネット上で通信を暗号化し、安全にデータをやり取りする仕組みは？",
+        options: ["HTTPS", "HTML", "CPU", "RAM"],
+        answer: 0
+      },
+      {
+        q: "悪意のあるソフトウェア全般（ウイルスやランサムウェアなど）の総称は？",
+        options: ["ハードウェア", "マルウェア", "ミドルウェア", "フリーウェア"],
+        answer: 1
+      },
+      {
+        q: "企業の情報を管理・分析し、経営判断に役立てる概念・ツールの略称は？",
+        options: ["BI", "AI", "UI", "UX"],
+        answer: 0
+      },
+      {
+        q: "プロジェクト全体で「最も時間がかかる作業経路」のことを何と呼ぶ？",
+        options: ["クリティカルパス", "バイパス", "マイルストーン", "ガントチャート"],
+        answer: 0
+      },
+      {
+        q: "情報を「機密性」「完全性」「可用性」の観点から保護・管理することを何という？",
+        options: ["情報セキュリティ", "個人情報保護法", "著作権", "ライセンス管理"],
+        answer: 0
+      }
+    ];
+
+    let currentQuizIndex = 0;
+    let quizScore = 0;
+
+    function initGame5() {
+      currentQuizIndex = 0;
+      quizScore = 0;
+      document.getElementById('restartQuizBtn').style.display = 'none';
+      showQuiz();
+    }
+
+    function showQuiz() {
+      document.getElementById('nextQuizBtn').style.display = 'none';
+      document.getElementById('game5Result').textContent = '';
+      
+      const qData = quizData[currentQuizIndex];
+      document.getElementById('quizNum').textContent = currentQuizIndex + 1;
+      document.getElementById('quizQuestion').textContent = qData.q;
+
+      const optionsEl = document.getElementById('quizOptions');
+      optionsEl.innerHTML = '';
+
+      qData.options.forEach((optText, index) => {
+        const btn = document.createElement('ons-button');
+        btn.classList.add('quiz-option');
+        btn.setAttribute('modifier', 'outline');
+        btn.textContent = `${index + 1}. ${optText}`;
+        btn.onclick = () => answerQuiz(index);
+        optionsEl.appendChild(btn);
+      });
+    }
+
+    function answerQuiz(selectedIndex) {
+      const qData = quizData[currentQuizIndex];
+      const resultEl = document.getElementById('game5Result');
+
+      // 全ボタンを無効化
+      const btns = document.querySelectorAll('.quiz-option');
+      btns.forEach(btn => btn.setAttribute('disabled', 'true'));
+
+      if (selectedIndex === qData.answer) {
+        resultEl.textContent = '⭕️ 正解！';
+        resultEl.style.color = '#4caf50';
+        quizScore++;
+      } else {
+        resultEl.textContent = `❌ 不正解...（正解: ${qData.options[qData.answer]}）`;
+        resultEl.style.color = '#f44336';
+      }
+
+      if (currentQuizIndex < quizData.length - 1) {
+        document.getElementById('nextQuizBtn').style.display = 'inline-block';
+      } else {
+        setTimeout(() => {
+          document.getElementById('quizQuestion').textContent = '結果発表！';
+          document.getElementById('quizOptions').innerHTML = '';
+          resultEl.style.color = '#333';
+          resultEl.textContent = `5問中 ${quizScore} 問正解でした！`;
+          document.getElementById('restartQuizBtn').style.display = 'inline-block';
+        }, 1500);
+      }
+    }
+
+    function nextQuiz() {
+      currentQuizIndex++;
+      showQuiz();
+    }
+  </script>
+</body>
+</html>
